@@ -772,10 +772,10 @@ function doDig(){
   if(digSpot.hits<=0){
     const roll=Math.random();
     if(!flags.hasScope&&roll<0.15){ flags.hasScope=true; msg("A TELESCOPE! Now to watch the horizon... [T]"); sJingle(); updateScopeBtn(); }
-    else if(roll<0.45){ inv.rock++; msg("Dug up a solid rock! Good for tools."); sPickup(); }
-    else if(roll<0.6){ inv.gold+=rand(2,5)|0; msg("Buried treasure! Gold doubloons!"); sJingle(); }
-    else if(roll<0.78){ inv.rope++; msg("Dug up a coil of old rope!"); sPickup(); }
-    else if(roll<0.92){ inv.wood++; msg("Some buried driftwood. Handy!"); sPickup(); }
+    else if(roll<0.6){ inv.rock++; msg("Dug up a solid rock! Good for tools."); sPickup(); }
+    else if(roll<0.72){ inv.gold+=rand(2,5)|0; msg("Buried treasure! Gold doubloons!"); sJingle(); }
+    else if(roll<0.86){ inv.rope++; msg("Dug up a coil of old rope!"); sPickup(); }
+    else if(roll<0.95){ inv.wood++; msg("Some buried driftwood. Handy!"); sPickup(); }
     else msg("...an old boot. Fantastic.");
     digSpot=null; refreshInv();
   }
@@ -869,7 +869,7 @@ function eat(kind){
 /* ---------- building ---------- */
 const BUILDS=[
  {id:'fire', name:'CAMPFIRE', cost:{wood:2}, desc:'Cook fish, sleep at night. Burns out after a day!', done:()=>flags.fire, req:()=>true, reqTxt:'', fn:()=>{flags.fire=true; fireFuel=DAY_LEN;}},
- {id:'hammer', name:'MAKESHIFT HAMMER', cost:{rock:1,rope:1}, desc:'Chip rocks off the big boulder. Breaks after 5 uses', done:()=>flags.hammer, req:()=>true, reqTxt:'', fn:()=>{flags.hammer=true; tools.hammer=5;}},
+ {id:'hammer', name:'MAKESHIFT HAMMER', cost:{rock:1,rope:2}, desc:'Chip rocks off the big boulder. Breaks after 5 uses', done:()=>flags.hammer, req:()=>true, reqTxt:'', fn:()=>{flags.hammer=true; tools.hammer=5;}},
  {id:'axe', name:'MAKESHIFT AXE', cost:{rock:1,rope:2}, desc:'Sharp rock on a stick. Breaks after 5 uses', done:()=>flags.axe, req:()=>true, reqTxt:'', fn:()=>{flags.axe=true; tools.axe=5;}},
  {id:'spear', name:'FISHING SPEAR', cost:{wood:1,rope:1}, desc:'Throw it to catch small fish. Breaks after 5 throws', done:()=>flags.spear, req:()=>flags.axe, reqTxt:'axe', fn:()=>{flags.spear=true; tools.spear=5;}},
  {id:'cover', name:'COVER', cost:{wood:4,rope:2}, desc:'Shelter from rain and sun', done:()=>flags.cover, req:()=>flags.hammer&&flags.axe, reqTxt:'hammer + axe', fn:()=>{flags.cover=true;}},
