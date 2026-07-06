@@ -535,7 +535,7 @@ const BOTTLES=["'HELP! I'm trapped in a message bottle factory!'","'If found, pl
 "'P.S. sharks can't read. P.P.S. neither can fish.'","'Knock knock. Who's there? The tide. Every 12 hours.'",
 "'Congrats on opening this bottle. That's the whole message.'","'Day 400: the coconuts have elected me mayor.'",
 "'Whoever finds this owes me a bottle.'","'SEND SUNSCREEN. Everything else is fine.'",
-"'The shark lies about being vegetarian. -Everyone'","'Chain letter! Send to 10 castaways or bad luck!'",
+"'The shark lies about being vegetarian. -Kevin'","'Chain letter! Send to 10 castaways or bad luck!'",
 "'Lost: one raft. Reward: one coconut.'","'If you can read this, you're too far from civilisation.'",
 "'Warning: island may contain island.'","'I put one message in a bottle. Now I can't stop.'",
 "'Wish you were here! Actually no, it's terrible.'"];
@@ -546,7 +546,7 @@ const WEATHER_MUMBLES=["Rain. RAIN. Of course it's raining.","My hat is soggy. M
 "Wet beard. The worst kind of beard.","Rain again? The sky has issues.",
 "At least the shower's free...","Lightning AND thunder? Very dramatic. 6/10.",
 "The gulls don't mind the rain. Show-offs.","Splish splash, I HATE it."];
-const SHARKLINES=["Lovely evening! Fancy a swim?","The water is LOVELY out here. Trust me.",
+const SHARKLINES=["Fancy a swim?","The water is LOVELY out here. Trust me.",
 "I'm a vegetarian. Mostly. Come closer?","Just once around the island? I'll guide you!",
 "You look... delicious-- I mean, marvelous!","No pressure, but the deep end is GREAT.",
 "Did you know sharks are 90% smiles?","I ate a surfboard once. Come hear the story!",
@@ -772,10 +772,11 @@ function doDig(){
   if(digSpot.hits<=0){
     const roll=Math.random();
     if(!flags.hasScope&&roll<0.15){ flags.hasScope=true; msg("A TELESCOPE! Now to watch the horizon... [T]"); sJingle(); updateScopeBtn(); }
-    else if(roll<0.6){ inv.rock++; msg("Dug up a solid rock! Good for tools."); sPickup(); }
+    else if(roll<0.5){ inv.rock++; msg("Dug up a solid rock! Good for tools."); sPickup(); }
     else if(roll<0.72){ inv.gold+=rand(2,5)|0; msg("Buried treasure! Gold doubloons!"); sJingle(); }
     else if(roll<0.86){ inv.rope++; msg("Dug up a coil of old rope!"); sPickup(); }
     else if(roll<0.95){ inv.wood++; msg("Some buried driftwood. Handy!"); sPickup(); }
+    else if(roll<0.65) msg("A sea shell, How quaint!");
     else msg("...an old boot. Fantastic.");
     digSpot=null; refreshInv();
   }
