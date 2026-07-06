@@ -1015,7 +1015,7 @@ function updateShark(dt){
     const dx=p.x-shark.x;
     shark.dir=dx>0?1:-1;
     shark.x+=Math.sign(dx)*85*dt;
-    if(Math.abs(dx)<16){ shark.state='eat'; mode='eaten'; eatenT=0; sChomp(); }
+    if(Math.abs(dx)<16){ shark.state='eat'; mode='eaten'; eatenT=0; sChomp(); deadReason="CHOMP! The shark got you."; }
   }else if(shark.state==='eat'){
     // frozen mid-chomp; nothing to update
   }else if(shark.visitT>0){
@@ -1026,6 +1026,13 @@ function updateShark(dt){
     const dx=shoreX-shark.x;
     if(Math.abs(dx)>6){ shark.x+=Math.sign(dx)*70*dt; shark.dir=dx>0?1:-1; }
     else shark.dir=(p.x>shark.x)?1:-1;
+    // swimming up to the friendly shark ends how you'd expect
+    if(!onLand&&Math.abs(p.x-shark.x)<20){
+      shark.state='eat'; shark.visitT=0; sharkBubble=null;
+      mode='eaten'; eatenT=0; sChomp();
+      deadReason="You trusted the shark. CHOMP.";
+      return;
+    }
     if(!sharkBubble&&Math.random()<dt*0.9){
       sharkBubble={t:SHARKLINES[Math.random()*SHARKLINES.length|0],life:3.5};
       sGrunt();
@@ -1081,7 +1088,7 @@ function update(dt){
     eatenT+=dt;
     for(let i=0;i<2;i++) particles.push({x:p.x+rand(-10,10),y:WATER+rand(0,8),vx:rand(-40,40),vy:rand(-90,-20),c:'#dd2222',t:0.7});
     updateParticles(dt);
-    if(eatenT>1.4){ mode='dead'; deadReason="CHOMP! The shark got you."; }
+    if(eatenT>1.4){ mode='dead'; }
     return;
   }
   if(mode==='sail'){
