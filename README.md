@@ -1,5 +1,3 @@
-# Castaway
-Mini Castaway Survival
 # Castaway Island — Design
 
 Date: 2026-07-05
