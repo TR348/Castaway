@@ -3,6 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Castaway">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#000000">
 <title>Castaway Island</title>
 <style>
   html,body{margin:0;padding:0;background:#000;height:100%;overflow:hidden;touch-action:none;
@@ -18,7 +23,9 @@
   #btnAct{right:12px;bottom:14px;min-width:96px;height:56px;background:#341;}
   #btnBuild{right:12px;bottom:80px;background:#134;}
   #btnScope{right:12px;bottom:136px;background:#413;display:none;}
-  #btnPause{right:12px;top:12px;width:48px;height:44px;font-size:16px;background:#222;padding:6px;}
+  #btnPause{right:68px;top:12px;width:48px;height:44px;font-size:16px;background:#222;padding:6px;}
+  #btnExit{right:12px;top:12px;width:48px;height:44px;font-size:18px;background:#411;padding:6px;}
+  #btnFS{right:124px;top:12px;width:48px;height:44px;font-size:18px;background:#222;padding:6px;}
   @media (pointer:coarse){ #btnL,#btnR{display:block;} }
   #inv{position:fixed;left:10px;bottom:80px;z-index:20;display:flex;flex-direction:column;gap:4px;}
   @media (pointer:fine){ #inv{bottom:14px;} }
@@ -44,6 +51,8 @@
 <button class="pixbtn" id="btnBuild">BUILD [B]</button>
 <button class="pixbtn" id="btnScope">SCOPE [T]</button>
 <button class="pixbtn" id="btnPause">&#10074;&#10074;</button>
+<button class="pixbtn" id="btnExit">&#10005;</button>
+<button class="pixbtn" id="btnFS">&#x26F6;</button>
 <div id="inv"></div>
 <div id="overlay"><div id="panel"></div></div>
 
@@ -525,8 +534,37 @@ let shark, mermaid, digSpot, timers, bubble, sleepT, eatenT, sailT, sharkWarned,
 let weather, plane, drop, sharkBubble, fireFuel;
 let island=1, arriveT=0, arriveWreckDone=false;
 let paused=false;
+/* ---------- fullscreen ---------- */
+function fsSupported(){
+  const d=document.documentElement;
+  return !!(d.requestFullscreen||d.webkitRequestFullscreen);
+}
+function enterFS(){
+  const d=document.documentElement;
+  try{ (d.requestFullscreen||d.webkitRequestFullscreen).call(d,{navigationUI:'hide'}); }catch(e){}
+}
+function toggleFS(){
+  if(!fsSupported()) return;
+  if(document.fullscreenElement||document.webkitFullscreenElement){
+    try{ (document.exitFullscreen||document.webkitExitFullscreen).call(document); }catch(e){}
+  }else enterFS();
+}
+/* ---------- exit ---------- */
+function doExit(){
+  panelOpen=true; overlay.style.display='flex';
+  panel.innerHTML='<h2>EXIT GAME?</h2><p>Progress is not saved.</p>'+
+    '<button class="bopt" id="exYes" style="background:#412;border-color:#c88">YES, EXIT</button>'+
+    '<button class="bopt close" id="exNo">KEEP PLAYING</button>';
+  panel.querySelector('#exNo').addEventListener('click',hidePanel);
+  panel.querySelector('#exYes').addEventListener('click',()=>{
+    hidePanel();
+    if(AC){ try{ AC.suspend(); }catch(e){} }
+    mode='exit';
+    window.close(); // works in some browsers/PWAs; otherwise the goodbye screen shows
+  });
+}
 function togglePause(){
-  if(mode==='title'||mode==='dead'||mode==='win') return;
+  if(mode==='title'||mode==='dead'||mode==='win'||mode==='exit') return;
   paused=!paused;
   if(AC){ if(paused) AC.suspend(); else AC.resume(); }
   document.getElementById('btnPause').innerHTML=paused?'&#9654;':'&#10074;&#10074;';
@@ -574,6 +612,7 @@ addEventListener('keydown',e=>{
   const k=e.key.toLowerCase();
   keys[k]=true;
   if(e.repeat) return;
+  if(mode==='exit'){ resetGame(); mode='title'; return; }
   if(mode==='title'){ mode='play'; return; }
   if(mode==='dead'||mode==='win'){ resetGame(); mode='play'; return; }
   if(k==='p'){ togglePause(); return; }
@@ -593,20 +632,34 @@ bindHold(document.getElementById('btnL'),v=>touchL=v);
 bindHold(document.getElementById('btnR'),v=>touchR=v);
 document.getElementById('btnAct').addEventListener('pointerdown',e=>{
   e.preventDefault(); audioInit();
-  if(mode==='title'){ mode='play'; return; }
+  if(mode==='exit'){ resetGame(); mode='title'; return; }
+  if(mode==='title'){ mode='play'; if(matchMedia('(pointer:coarse)').matches) enterFS(); return; }
   if(mode==='dead'||mode==='win'){ resetGame(); mode='play'; return; }
   doAct();
 });
 document.getElementById('btnBuild').addEventListener('pointerdown',e=>{ e.preventDefault(); audioInit(); toggleBuild(); });
 document.getElementById('btnScope').addEventListener('pointerdown',e=>{
-  e.preventDefault(); if(flags.hasScope&&!paused) mode=(mode==='scope')?'play':'scope';
+  e.preventDefault();
+  if(flags.hasScope&&!paused&&(mode==='play'||mode==='scope')) mode=(mode==='scope')?'play':'scope';
 });
 document.getElementById('btnPause').addEventListener('pointerdown',e=>{
   e.preventDefault(); audioInit(); togglePause();
 });
+document.getElementById('btnExit').addEventListener('pointerdown',e=>{
+  e.preventDefault(); if(mode!=='exit') doExit();
+});
+document.getElementById('btnFS').addEventListener('pointerdown',e=>{
+  e.preventDefault(); toggleFS();
+});
+if(!fsSupported()) document.getElementById('btnFS').style.display='none';
 cv.addEventListener('pointerdown',e=>{
   audioInit();
-  if(mode==='title'){ mode='play'; return; }
+  if(mode==='exit'){ resetGame(); mode='title'; return; }
+  if(mode==='title'){
+    mode='play';
+    if(matchMedia('(pointer:coarse)').matches) enterFS(); // phones/tablets go fullscreen on start
+    return;
+  }
   if(mode==='dead'||mode==='win'){ resetGame(); mode='play'; return; }
   if(paused){ togglePause(); return; }
   if(mode==='scope'){ mode='play'; return; }
@@ -782,7 +835,7 @@ function canAfford(c){ for(const k in c) if(inv[k]<c[k]) return false; return tr
 function pay(c){ for(const k in c) inv[k]-=c[k]; refreshInv(); }
 const overlay=document.getElementById('overlay'), panel=document.getElementById('panel');
 let panelOpen=false;
-function toggleBuild(){ if(paused) return; if(panelOpen){ hidePanel(); } else showBuild(); }
+function toggleBuild(){ if(paused||mode==='exit') return; if(panelOpen){ hidePanel(); } else showBuild(); }
 function showBuild(){
   panelOpen=true; overlay.style.display='flex';
   let h='<h2>BUILD</h2>';
@@ -1710,6 +1763,13 @@ function loop(now){
 
   ctx.setTransform(1,0,0,1,0,0);
   ctx.clearRect(0,0,VW,VH);
+  if(mode==='exit'){
+    ctx.fillStyle='#000'; ctx.fillRect(0,0,VW,VH);
+    centerText('THANKS FOR PLAYING!',VH/2-24,20,'#ffd800');
+    centerText('You can close this tab or app now.',VH/2+4,11,'#fff');
+    centerText('(or tap / press any key to return to the title)',VH/2+24,10,'#89a');
+    requestAnimationFrame(loop); return;
+  }
   if(mode==='title'){ drawTitle(); requestAnimationFrame(loop); return; }
   if(mode==='scope'){ drawScope(); drawHUD(); if(paused) drawPaused(); requestAnimationFrame(loop); return; }
   ctx.save(); ctx.translate(-camX,0);
@@ -1730,6 +1790,40 @@ function drawPaused(){
   centerText('PAUSED',VH/2-8,26,'#ffd800');
   centerText('P / tap to resume',VH/2+16,11,'#fff');
 }
+/* ---------- PWA manifest + icon (generated at runtime, keeps the game one file) ----------
+   With this, "Add to Home Screen" on iPhone/Android launches fullscreen with a palm icon. */
+(function(){
+  try{
+    function makeIcon(sz){
+      const c=document.createElement('canvas'); c.width=sz; c.height=sz;
+      const g=c.getContext('2d'), u=sz/192;
+      g.fillStyle='#33ccee'; g.fillRect(0,0,sz,sz*0.55);
+      g.fillStyle='#2222aa'; g.fillRect(0,sz*0.55,sz,sz*0.45);
+      g.fillStyle='#ffe860'; g.beginPath(); g.arc(40*u,40*u,20*u,0,7); g.fill();
+      g.fillStyle='#eed988'; g.beginPath(); g.ellipse(96*u,120*u,70*u,26*u,0,0,7); g.fill();
+      g.strokeStyle='#8a5424'; g.lineWidth=9*u; g.lineCap='round';
+      g.beginPath(); g.moveTo(96*u,116*u); g.quadraticCurveTo(108*u,80*u,124*u,56*u); g.stroke();
+      g.fillStyle='#22bb44';
+      for(let i=0;i<6;i++){
+        g.save(); g.translate(124*u,56*u); g.rotate(i*1.05-2.6);
+        g.beginPath(); g.ellipse(24*u,0,26*u,8*u,0,0,7); g.fill(); g.restore();
+      }
+      g.fillStyle='#5e3813';
+      g.beginPath(); g.arc(118*u,64*u,5*u,0,7); g.arc(129*u,66*u,5*u,0,7); g.fill();
+      return c.toDataURL('image/png');
+    }
+    const i192=makeIcon(192), i512=makeIcon(512);
+    const man={name:'Castaway Island',short_name:'Castaway',start_url:'.',scope:'.',
+      display:'fullscreen',orientation:'landscape',background_color:'#000000',theme_color:'#000000',
+      icons:[{src:i192,sizes:'192x192',type:'image/png'},{src:i512,sizes:'512x512',type:'image/png'}]};
+    const lm=document.createElement('link'); lm.rel='manifest';
+    lm.href=URL.createObjectURL(new Blob([JSON.stringify(man)],{type:'application/json'}));
+    document.head.appendChild(lm);
+    const la=document.createElement('link'); la.rel='apple-touch-icon'; la.href=i192;
+    document.head.appendChild(la);
+  }catch(e){}
+})();
+
 resetGame();
 updateScopeBtn();
 requestAnimationFrame(loop);
