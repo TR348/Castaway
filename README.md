@@ -1,7 +1,7 @@
 # Castaway Island — Design
 
 Date: 2026-07-05
-Status: Implemented (v3 — two-island escape arc, weather roll-in, spear/chop/smash
+Status: Implemented (v7 — two-island escape arc, weather roll-in, spear/chop/smash
 animations, pause)
 
 ## Goal
