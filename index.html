@@ -70,7 +70,7 @@ const IL=560, IR=1040;         // island base extents
 const DEEP_L=340, DEEP_R=1260; // beyond this = shark territory
 const HORIZON=168;
 const DAY_LEN=150;             // seconds per full day+night
-const FIREX=690, STASHX=724, RAFTX=556, SPRINGX=975, SHELTERX=860, CHAIRX=755, TABLEX=735;
+const FIREX=690, STASHX=724, RAFTX=556, SPRINGX=975, ROCKX=997, SHELTERX=860, CHAIRX=755, TABLEX=735;
 
 const cv=document.getElementById('game'), ctx=cv.getContext('2d');
 ctx.imageSmoothingEnabled=false;
@@ -509,20 +509,49 @@ const MUMBLES=["*grumble* ...coconuts again...","I miss pizza so much...","Day w
 "*sigh* the sea, the sea, the sea.","I should name that palm tree... Bob?","Is that sunburn or a tan? Both.",
 "One day I'll own shoes again.","*hums a sea shanty badly*","Note to self: sand is not food.",
 "That cloud looks like a burger...","My kingdom for a cold drink!","I used to have meetings. MEETINGS!",
-"Wilson? No... too obvious.","*mutters* stupid beautiful sunsets..."];
+"Wilson? No... too obvious.","*mutters* stupid beautiful sunsets...",
+"I named the shark Kevin. Kevin is a liar.","Sand in places sand should NEVER be.",
+"I'd trade this whole island for one taxi.","Coconut for breakfast, lunch AND dinner. Yay.",
+"The seagulls are plotting. I can feel it.","I actually miss Mondays. MONDAYS!",
+"Talking to myself again. Great chat, me.","Maybe the mermaid knows a good pizza place.",
+"My beard has its own beard now.","Five stars for the beach. Zero for everything else.",
+"If I squint, the island looks like... an island.","Should've taken that desk job.",
+"Note to self: fish don't like small talk.","I miss doors. Just... doors.",
+"The sun and I are no longer on speaking terms.","Rope, wood, rocks. My life is a hardware store.",
+"One day this'll be a great story. Not today.","I taught a crab to wave. Career highlight.",
+"Someone out there is eating a burger. Enjoy it, buddy.","The moon gets it. The moon understands me.",
+"My hat is my best friend. Don't tell the palm.","HELLO? ANYONE?! ...just waves. Classic.",
+"I counted the sand twice. Different answers.","Treasure hunting update: mostly boots.",
+"Is it weird I said good morning to the fire?","Kevin circled by again. Still not swimming, Kevin!",
+"A raft, a plan... a nap first.","The stars would be prettier with pizza.",
+"I used to have WiFi. WIFI!","I gave the crabs tiny names. Don't judge me.",
+"Today's forecast: sand, with a chance of sand."];
 const BOTTLES=["'HELP! I'm trapped in a message bottle factory!'","'If found, please return to sender. No address given.'",
 "'Recipe inside: 1) get fish 2) fire 3) yum'","'The mermaid tips well if you wave back. -A friend'",
 "'THIS IS BOTTLE 4,721. COLLECT THEM ALL!'","'Beware the fin. Sincerely, someone with one leg.'",
 "'Dear diary... wrong bottle. Ignore this.'","'You are the 1,000,000th castaway! Claim prize: nothing.'",
 "'Buried gold near the palms. Or was it socks?'","'It's not the destination, it's the raft. -Confucius (probably)'",
 "'SALE! 50% off rope at Shipwreck Sam's. This week only!'","'The seagulls are organized. Trust no beak.'",
-"'P.S. sharks can't read. P.P.S. neither can fish.'","'Knock knock. Who's there? The tide. Every 12 hours.'"];
+"'P.S. sharks can't read. P.P.S. neither can fish.'","'Knock knock. Who's there? The tide. Every 12 hours.'",
+"'Congrats on opening this bottle. That's the whole message.'","'Day 400: the coconuts have elected me mayor.'",
+"'Whoever finds this owes me a bottle.'","'SEND SUNSCREEN. Everything else is fine.'",
+"'The shark lies about being vegetarian. -Everyone'","'Chain letter! Send to 10 castaways or bad luck!'",
+"'Lost: one raft. Reward: one coconut.'","'If you can read this, you're too far from civilisation.'",
+"'Warning: island may contain island.'","'I put one message in a bottle. Now I can't stop.'",
+"'Wish you were here! Actually no, it's terrible.'"];
 const WEATHER_MUMBLES=["Rain. RAIN. Of course it's raining.","My hat is soggy. My LIFE is soggy.",
 "Great weather... for a FISH.","*shivers* should've built that cover...","Thunder?! Oh come ON!",
-"Even the clouds are against me.","I already HAD a shower this year!"];
+"Even the clouds are against me.","I already HAD a shower this year!",
+"My fire! Protect the fire!","The forecast said SUNNY. I want a refund!",
+"Wet beard. The worst kind of beard.","Rain again? The sky has issues.",
+"At least the shower's free...","Lightning AND thunder? Very dramatic. 6/10.",
+"The gulls don't mind the rain. Show-offs.","Splish splash, I HATE it."];
 const SHARKLINES=["Lovely evening! Fancy a swim?","The water is LOVELY out here. Trust me.",
 "I'm a vegetarian. Mostly. Come closer?","Just once around the island? I'll guide you!",
-"You look... delicious-- I mean, marvelous!","No pressure, but the deep end is GREAT."];
+"You look... delicious-- I mean, marvelous!","No pressure, but the deep end is GREAT.",
+"Did you know sharks are 90% smiles?","I ate a surfboard once. Come hear the story!",
+"Your raft looks... crunchy. I mean STURDY.","We could be pals! Pals swim together!",
+"The mermaid says lovely things about you. Come closer!","I only bite on days ending in Y. Wait--"];
 
 /* ---------- game state ---------- */
 let mode='title';     // title | play | scope | sleep | eaten | sail | dead | win
@@ -533,6 +562,12 @@ let p, inv, flags, stats, palms, gulls, floaters, ships, particles, msgs;
 let shark, mermaid, digSpot, timers, bubble, sleepT, eatenT, sailT, sharkWarned, moveTarget;
 let weather, plane, drop, sharkBubble, fireFuel;
 let island=1, arriveT=0, arriveWreckDone=false;
+let tools, rockHits;
+function toolWear(name,breakMsg){
+  tools[name]--;
+  if(tools[name]<=0){ flags[name]=false; noiseHit(0.2,0.18,700); msg(breakMsg); }
+  refreshInv();
+}
 let paused=false;
 /* ---------- fullscreen ---------- */
 function fsSupported(){
@@ -576,13 +611,14 @@ function resetGame(){
   p={x:800,y:210,dir:1,anim:0,moving:false,digT:0,sitAt:null,smashT:0};
   inv={wood:0,rope:0,rock:0,coconut:2,fishR:0,fishC:0,fishBR:0,fishBC:0,parachute:0,needle:0,gold:0};
   flags={hammer:false,axe:false,spear:false,hasRod:false,hasScope:false,fire:false,cover:false,
-         chair:false,table:false,hut:false,bigHut:false,mast:false,sail:false,raft:false,spring:false};
+         chair:false,table:false,hut:false,mast:false,sail:false,raft:false,spring:false};
   stats={hp:100,food:80,water:80,energy:100};
   palms=[{x:640,size:0.85,coco:2,regrow:0,alive:true,chop:3,falling:0},{x:800,size:1.15,coco:3,regrow:0,alive:true,chop:3,falling:0},{x:945,size:0.9,coco:2,regrow:0,alive:true,chop:3,falling:0}];
   gulls=[]; floaters=[]; ships=[]; particles=[]; msgs=[];
   shark={x:200,dir:1,state:'patrol',anim:0,visitT:0};
   mermaid=null; digSpot=null; fishing=null; bubble=null; moveTarget=null;
   weather={active:false,dur:0,flash:0,thunderIn:0,side:1,elapsed:0,I:0}; plane=null; drop=null; sharkBubble=null; fireFuel=0;
+  tools={spear:0,hammer:0,axe:0}; rockHits=3;
   sleepT=0; eatenT=0; sailT=0; sharkWarned=false; island=1; arriveT=0; arriveWreckDone=false;
   timers={floater:rand(14,25),gull:rand(40,70),mermaid:rand(90,170),ship:rand(30,80),dig:rand(50,90),
           mumble:rand(8,18),rain:rand(100,220),plane:rand(110,220),sharkTalk:rand(70,140)};
@@ -600,7 +636,7 @@ function nightAmt(){
 }
 function foodCount(){ return inv.coconut+fishCount(); }
 function fishCount(){ return inv.fishR+inv.fishC+inv.fishBR+inv.fishBC; }
-function shelterTier(){ return flags.bigHut?3:flags.hut?2:flags.cover?1:0; }
+function shelterTier(){ return flags.hut?2:flags.cover?1:0; }
 function underShelter(){ return shelterTier()>0 && Math.abs(p.x-SHELTERX)<44; }
 function onLandAt(x){ return islandTop(x)<WATER-2; }
 
@@ -683,16 +719,18 @@ function getAction(){
   if(nightAmt()>0.5 && flags.fire && Math.abs(p.x-FIREX)<50 && onLand) return {label:'SLEEP',fn:doSleep};
   if(flags.fire && (inv.fishR>0||inv.fishBR>0) && Math.abs(p.x-FIREX)<40 && onLand) return {label:'COOK FISH',fn:cookFish};
   if(digSpot && Math.abs(p.x-digSpot.x)<26 && onLand) return {label:'DIG',fn:doDig};
-  if(Math.abs(p.x-SPRINGX)<28 && onLand) return {label:'DRINK',fn:doDrink};
+  if(flags.hammer && Math.abs(p.x-ROCKX)<16 && onLand) return {label:'CHOP ROCK',fn:chopRock};
+  if(Math.abs(p.x-SPRINGX)<20 && onLand) return {label:'DRINK',fn:doDrink};
   for(const pl of palms){
     if(!pl.alive||pl.falling>0) continue;
-    if(flags.axe && flags.bigHut && pl.coco===0 && Math.abs(p.x-pl.x)<30 && onLand)
+    if(flags.axe && flags.hut && pl.coco===0 && Math.abs(p.x-pl.x)<30 && onLand)
       return {label:'CHOP PALM',fn:()=>chopPalm(pl)};
     if(pl.coco>0 && Math.abs(p.x-pl.x)<34 && onLand) return {label:'SHAKE PALM',fn:()=>shakePalm(pl)};
   }
+  if(flags.hut && Math.abs(p.x-SHELTERX)<30 && onLand) return {label:'SLEEP IN HUT',fn:doSleep};
   if(flags.chair && !p.sitAt && Math.abs(p.x-CHAIRX)<22 && onLand) return {label:'SIT',fn:()=>{p.sitAt='chair';}};
-  if(shelterTier()>0 && !p.sitAt && Math.abs(p.x-SHELTERX)<30 && onLand)
-    return {label:shelterTier()===1?'SIT UNDER COVER':'SIT IN HUT',fn:()=>{p.sitAt='shelter';}};
+  if(shelterTier()===1 && !p.sitAt && Math.abs(p.x-SHELTERX)<30 && onLand)
+    return {label:'SIT UNDER COVER',fn:()=>{p.sitAt='shelter';}};
   if((flags.spear||flags.hasRod) && onLand && (p.x<landL+34||p.x>landR-34))
     return {label:flags.hasRod?'FISH (ROD)':'SPEAR FISH',fn:castRod};
   return null;
@@ -714,6 +752,17 @@ function shakePalm(pl){
 function doDrink(){
   if(!flags.spring){ flags.spring=true; msg("You found a fresh water spring!"); sJingle(); }
   stats.water=clamp(stats.water+45,0,100); sDrink(); msg("Ahh, fresh water. (+water)");
+}
+function chopRock(){
+  p.digT=0.55; sDig(); stats.energy=clamp(stats.energy-3,0,100);
+  p.dir=ROCKX>p.x?1:-1;
+  for(let i=0;i<6;i++) particles.push({x:ROCKX+rand(-9,9),y:islandTop(ROCKX)-8+rand(-6,4),vx:rand(-40,40),vy:rand(-60,-10),c:'#8494a8',t:0.6});
+  rockHits--;
+  if(rockHits<=0){
+    rockHits=3; inv.rock++; refreshInv(); sPickup();
+    msg("+1 rock chipped off the boulder!");
+    toolWear('hammer',"Your hammer fell apart!");
+  }
 }
 function doDig(){
   if(!digSpot) return;
@@ -740,12 +789,14 @@ function castRod(){
 }
 function reelIn(){
   if(!fishing) return;
+  const wasSpear=!fishing.big;
   if(fishing.bit){
     if(fishing.big){ inv.fishBR++; msg("A BIG fish! Dinner deluxe!"); }
     else { inv.fishR++; msg("Speared a little fish!"); }
     refreshInv(); sPickup(); sSplash();
   } else msg("Too soon... the fish laugh at you.");
   fishing=null;
+  if(wasSpear) toolWear('spear',"SNAP! Your spear broke.");
 }
 function cookFish(){
   if(inv.fishR>0){ inv.fishR--; inv.fishC++; }
@@ -784,7 +835,7 @@ function startNewIsland(){
   updateScopeBtn();
   mode='arrive'; arriveT=0; arriveWreckDone=false;
   msg("Land ho! ...Another island. With three palm trees. Huh.");
-  msg("The shipping lanes must be close now. One more raft...");
+  msg("Maybe next time a ship will spot the raft...");
 }
 
 function applyCoconut(){
@@ -818,16 +869,15 @@ function eat(kind){
 /* ---------- building ---------- */
 const BUILDS=[
  {id:'fire', name:'CAMPFIRE', cost:{wood:2}, desc:'Cook fish, sleep at night. Burns out after a day!', done:()=>flags.fire, req:()=>true, reqTxt:'', fn:()=>{flags.fire=true; fireFuel=DAY_LEN;}},
- {id:'hammer', name:'MAKESHIFT HAMMER', cost:{rock:1,rope:1}, desc:'A rock on a stick. Dig up rocks!', done:()=>flags.hammer, req:()=>true, reqTxt:'', fn:()=>{flags.hammer=true;}},
- {id:'axe', name:'MAKESHIFT AXE', cost:{rock:1,rope:2}, desc:'Sharp rock on a stick', done:()=>flags.axe, req:()=>true, reqTxt:'', fn:()=>{flags.axe=true;}},
- {id:'spear', name:'FISHING SPEAR', cost:{wood:1,rope:1}, desc:'Throw it to catch small fish', done:()=>flags.spear, req:()=>flags.axe, reqTxt:'axe', fn:()=>{flags.spear=true;}},
+ {id:'hammer', name:'MAKESHIFT HAMMER', cost:{rock:1,rope:1}, desc:'Chip rocks off the big boulder. Breaks after 5 uses', done:()=>flags.hammer, req:()=>true, reqTxt:'', fn:()=>{flags.hammer=true; tools.hammer=5;}},
+ {id:'axe', name:'MAKESHIFT AXE', cost:{rock:1,rope:2}, desc:'Sharp rock on a stick. Breaks after 5 uses', done:()=>flags.axe, req:()=>true, reqTxt:'', fn:()=>{flags.axe=true; tools.axe=5;}},
+ {id:'spear', name:'FISHING SPEAR', cost:{wood:1,rope:1}, desc:'Throw it to catch small fish. Breaks after 5 throws', done:()=>flags.spear, req:()=>flags.axe, reqTxt:'axe', fn:()=>{flags.spear=true; tools.spear=5;}},
  {id:'cover', name:'COVER', cost:{wood:4,rope:2}, desc:'Shelter from rain and sun', done:()=>flags.cover, req:()=>flags.hammer&&flags.axe, reqTxt:'hammer + axe', fn:()=>{flags.cover=true;}},
- {id:'chair', name:'CHAIR', cost:{wood:2,rope:1}, desc:'Sit like a civilised person', done:()=>flags.chair, req:()=>flags.cover, reqTxt:'cover', fn:()=>{flags.chair=true;}},
- {id:'table', name:'TABLE', cost:{wood:3,rope:1}, desc:'Fine dining (+food bonus)', done:()=>flags.table, req:()=>flags.chair, reqTxt:'chair', fn:()=>{flags.table=true;}},
- {id:'rod', name:'FISHING ROD', cost:{wood:2,rope:2}, desc:'Catch BIG fish', done:()=>flags.hasRod, req:()=>flags.axe&&flags.table, reqTxt:'axe + table', fn:()=>{flags.hasRod=true;}},
- {id:'hut', name:'LITTLE HUT', cost:{wood:6,rope:3}, desc:'Upgrade the cover', done:()=>flags.hut, req:()=>flags.cover, reqTxt:'cover', fn:()=>{flags.hut=true;}},
- {id:'bigHut', name:'BIG HUT', cost:{wood:10,rope:5}, desc:'Unlocks chopping the palm trees!', done:()=>flags.bigHut, req:()=>flags.hut, reqTxt:'little hut', fn:()=>{flags.bigHut=true;}},
- {id:'mast', name:'MAST', cost:{wood:2,rope:1}, desc:'A raft needs a mast', done:()=>flags.mast, req:()=>flags.bigHut, reqTxt:'big hut', fn:()=>{flags.mast=true;}},
+ {id:'chair', name:'CHAIR', opt:true, cost:{wood:2,rope:1}, desc:'Sit like a civilised person', done:()=>flags.chair, req:()=>flags.cover, reqTxt:'cover', fn:()=>{flags.chair=true;}},
+ {id:'table', name:'TABLE', opt:true, cost:{wood:3,rope:1}, desc:'Fine dining (+food bonus)', done:()=>flags.table, req:()=>flags.chair, reqTxt:'chair', fn:()=>{flags.table=true;}},
+ {id:'rod', name:'FISHING ROD', cost:{wood:2,rope:2}, desc:'Catch BIG fish', done:()=>flags.hasRod, req:()=>flags.axe&&flags.cover, reqTxt:'axe + cover', fn:()=>{flags.hasRod=true;}},
+ {id:'hut', name:'HUT', cost:{wood:6,rope:3}, desc:'Sleep any time. Unlocks chopping the palms!', done:()=>flags.hut, req:()=>flags.cover, reqTxt:'cover', fn:()=>{flags.hut=true;}},
+ {id:'mast', name:'MAST', cost:{wood:2,rope:1}, desc:'A raft needs a mast', done:()=>flags.mast, req:()=>flags.hut, reqTxt:'hut', fn:()=>{flags.mast=true;}},
  {id:'sail', name:'SAILS', cost:{parachute:3,needle:1}, desc:'Sewn from rescue parachutes', done:()=>flags.sail, req:()=>flags.mast, reqTxt:'mast', fn:()=>{flags.sail=true;}},
  {id:'raft', name:'RAFT', cost:{wood:8,rope:5,coconut:4}, desc:'Coconuts help it float. Escape!', done:()=>flags.raft, req:()=>flags.sail, reqTxt:'sails', fn:()=>{flags.raft=true;}}
 ];
@@ -845,7 +895,8 @@ function showBuild(){
     if(!unlocked){ h+='<div style="color:#667;font-size:12px;margin:3px 0">&#128274; '+b.name+' (needs '+b.reqTxt+')</div>'; continue; }
     const cost=Object.entries(b.cost).map(([k,v])=>v+' '+k).join(' + ');
     h+='<button class="bopt" data-id="'+b.id+'" '+((!canAfford(b.cost))?'disabled':'')+'>'+
-       b.name+'<br><small>'+cost+' &mdash; '+b.desc+'</small></button>';
+       b.name+(b.opt?' <small style="color:#9ab">(optional)</small>':'')+
+       '<br><small>'+cost+' &mdash; '+b.desc+'</small></button>';
   }
   h+='<button class="bopt close" data-id="close">CLOSE</button>';
   panel.innerHTML=h;
@@ -862,11 +913,6 @@ function showBuild(){
     }
   }));
 }
-function showBottleMsg(text){
-  panelOpen=true; overlay.style.display='flex';
-  panel.innerHTML='<h2>MESSAGE IN A BOTTLE</h2><p>'+text+'</p><button class="bopt close">CLOSE</button>';
-  panel.querySelector('.close').addEventListener('click',hidePanel);
-}
 function hidePanel(){ panelOpen=false; overlay.style.display='none'; }
 overlay.addEventListener('pointerdown',e=>{ if(e.target===overlay) hidePanel(); });
 
@@ -881,6 +927,9 @@ function refreshInv(){
   for(const [k,label,edible] of items){
     if(inv[k]>0) h+='<button class="invItem'+(edible?' edible':'')+'" data-k="'+k+'">'+label+' x'+inv[k]+(edible?' (eat)':'')+'</button>';
   }
+  if(flags.spear) h+='<button class="invItem">SPEAR: '+tools.spear+' throws left</button>';
+  if(flags.hammer) h+='<button class="invItem">HAMMER: '+tools.hammer+' uses left</button>';
+  if(flags.axe) h+='<button class="invItem">AXE: '+tools.axe+' uses left</button>';
   invEl.innerHTML=h;
   invEl.querySelectorAll('.invItem').forEach(el=>el.addEventListener('pointerdown',e=>{
     e.preventDefault(); const k=el.dataset.k;
@@ -947,7 +996,7 @@ function collectFloater(f){
   else if(f.type==='rope'){ inv.rope++; msg("A coil of rope! (+1 rope)"); }
   else if(f.type==='crate'){ inv.wood+=2; inv.coconut++; msg("A crate! Wood and a snack inside!"); }
   else if(f.type==='scope'){ flags.hasScope=true; updateScopeBtn(); sJingle(); msg("A TELESCOPE floated by! Press [T] to gaze at the horizon."); }
-  else if(f.type==='bottle'){ showBottleMsg(BOTTLES[Math.random()*BOTTLES.length|0]); }
+  else if(f.type==='bottle'){ msg("A message in a bottle! It reads:"); msg(BOTTLES[Math.random()*BOTTLES.length|0]); }
   refreshInv();
 }
 
@@ -1039,7 +1088,8 @@ function update(dt){
     sailT+=dt; p.x-=35*dt; shark.x=p.x-120; shark.dir=1; shark.state='patrol';
     updateParticles(dt);
     if(sailT>5){
-      if(island>=2) mode='win'; // second escape reaches the shipping lanes
+      // rescue odds improve with each island: 25% -> 50% -> 75% -> guaranteed
+      if(Math.random()<Math.min(1,0.25*island)) mode='win';
       else startNewIsland();
     }
     return;
@@ -1167,7 +1217,11 @@ function update(dt){
   if(fishing){
     fishing.t+=dt;
     if(!fishing.bit&&fishing.t>fishing.biteAt){ fishing.bit=true; sSplash(); msg("!!! Something bit! REEL IN!"); }
-    if(fishing.bit&&fishing.t>fishing.biteAt+2.2){ fishing=null; msg("It got away..."); }
+    if(fishing.bit&&fishing.t>fishing.biteAt+2.2){
+      const wasSpear=!fishing.big;
+      fishing=null; msg("It got away...");
+      if(wasSpear) toolWear('spear',"SNAP! Your spear broke.");
+    }
   }
 
   // timers/events
@@ -1200,6 +1254,7 @@ function update(dt){
         noiseHit(0.4,0.25,150);
         for(let i=0;i<10;i++) particles.push({x:pl.x+rand(0,60),y:islandTop(pl.x)-4,vx:rand(-20,40),vy:rand(-60,-10),c:'#eed988',t:0.7});
         msg("TIMBER! +6 wood. (Sorry, tree.)");
+        toolWear('axe',"Your axe shattered!");
       }
       continue;
     }
@@ -1386,12 +1441,18 @@ function drawWorld(){
   ctx.fillStyle='rgba(255,255,255,'+(0.7-nt*0.3)+')';
   ctx.fillRect(landL-14+Math.sin(time*2)*3,WATER-1,18,2);
   ctx.fillRect(landR-4-Math.sin(time*2)*3,WATER-1,18,2);
-  // spring
+  // spring pool + big choppable boulder
   ctx.fillStyle='#8494a8';
-  ctx.beginPath(); ctx.ellipse(SPRINGX,islandTop(SPRINGX)-3,12,6,0,0,7); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(SPRINGX-10,islandTop(SPRINGX-10)-1,7,4,0,0,7); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(SPRINGX-12,islandTop(SPRINGX-12)-1,7,4,0,0,7); ctx.fill();
   ctx.fillStyle='#66ccff';
-  ctx.beginPath(); ctx.ellipse(SPRINGX+2,islandTop(SPRINGX)-2,6,2.5,0,0,7); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(SPRINGX,islandTop(SPRINGX)-2,9,3.5,0,0,7); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,0.5)'; ctx.fillRect(SPRINGX-4,islandTop(SPRINGX)-3,8,1);
+  const rky=islandTop(ROCKX);
+  ctx.fillStyle='#66788c';
+  ctx.beginPath(); ctx.ellipse(ROCKX,rky-8,16,11,0,0,7); ctx.fill();
+  ctx.fillStyle='#8494a8';
+  ctx.beginPath(); ctx.ellipse(ROCKX-4,rky-12,9,6,0,0,7); ctx.fill();
+  if(rockHits<3){ ctx.fillStyle='#4c5a6c'; for(let i=0;i<3-rockHits;i++) ctx.fillRect(ROCKX-6+i*7,rky-15+i*3,4,3); }
   // dig spot X
   if(digSpot){
     const dy=islandTop(digSpot.x);
@@ -1453,15 +1514,11 @@ function drawWorld(){
       ctx.fillStyle='#22bb44';
       ctx.beginPath(); ctx.moveTo(SHELTERX-30,sy0-22); ctx.lineTo(SHELTERX+26,sy0-34); ctx.lineTo(SHELTERX+30,sy0-26); ctx.lineTo(SHELTERX-26,sy0-14); ctx.closePath(); ctx.fill();
     }else{
-      const w=tier===2?46:64, h=tier===2?30:42;
+      const w=46, h=30;
       ctx.fillStyle='#8a5424'; ctx.fillRect(SHELTERX-w/2,sy0-h,w,h);
       ctx.fillStyle='#5e3813';
       for(let i=1;i<4;i++) ctx.fillRect(SHELTERX-w/2,sy0-h+i*(h/4),w,2);
       ctx.fillStyle='#2a1606'; ctx.fillRect(SHELTERX-7,sy0-20,14,20);
-      if(tier===3){
-        ctx.fillStyle='#113355'; ctx.fillRect(SHELTERX+w/2-18,sy0-h+10,11,9);
-        ctx.strokeStyle='#eed988'; ctx.lineWidth=1; ctx.strokeRect(SHELTERX+w/2-18,sy0-h+10,11,9);
-      }
       ctx.fillStyle='#0e7d2a';
       ctx.beginPath(); ctx.moveTo(SHELTERX-w/2-8,sy0-h); ctx.lineTo(SHELTERX,sy0-h-16); ctx.lineTo(SHELTERX+w/2+8,sy0-h); ctx.closePath(); ctx.fill();
     }
@@ -1629,7 +1686,7 @@ function drawPlayer(){
     const sx3=hx+(tx2-hx)*fl, sy3=hy+(ty3-hy)*fl*fl-(1-fl)*fl*22;
     ctx.save();
     ctx.translate(sx3,sy3+(fl>=1?Math.sin(time*3)*1.5:0));
-    ctx.rotate(p.dir*(0.25+fl*0.85));
+    ctx.rotate(-p.dir*(0.25+fl*0.85)); // lean so the tip points away from the castaway, into the sea
     ctx.strokeStyle='#8a5424'; ctx.lineWidth=2;
     ctx.beginPath(); ctx.moveTo(0,-14); ctx.lineTo(0,10); ctx.stroke();
     ctx.fillStyle='#8494a8'; ctx.fillRect(-2,8,4,7);
