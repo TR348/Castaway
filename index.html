@@ -773,10 +773,10 @@ function doDig(){
     const roll=Math.random();
     const hm=flags.hammer; // with a hammer the boulder supplies rocks, so digs favor other loot
     if(!flags.hasScope&&roll<0.15){ flags.hasScope=true; msg("A TELESCOPE! Now to watch the horizon... [T]"); sJingle(); updateScopeBtn(); }
-    else if(roll<(hm?0.3:0.5)){ inv.rock++; msg("Dug up a solid rock! Good for tools."); sPickup(); }
-    else if(roll<(hm?0.48:0.72)){ inv.gold+=rand(2,5)|0; msg("Buried treasure! Gold doubloons!"); sJingle(); }
-    else if(roll<(hm?0.75:0.86)){ inv.rope++; msg("Dug up a coil of old rope!"); sPickup(); }
-    else if(roll<(hm?0.92:0.95)){ inv.wood++; msg("Some buried driftwood. Handy!"); sPickup(); }
+    else if(roll<(hm?0.27:0.5)){ inv.rock++; msg("Dug up a solid rock! Good for tools."); sPickup(); }
+    else if(roll<(hm?0.42:0.66)){ inv.gold+=rand(2,5)|0; msg("Buried treasure! Gold doubloons!"); sJingle(); }
+    else if(roll<(hm?0.78:0.88)){ inv.rope++; msg("Dug up a coil of old rope!"); sPickup(); }
+    else if(roll<(hm?0.93:0.96)){ inv.wood++; msg("Some buried driftwood. Handy!"); sPickup(); }
     else{
       const duds=["...an old boot. Fantastic.","A sea shell. How quaint!",
         "Another boot?! Where did I leave the first one?","OUCH! A crab bit me! Rude."];
@@ -822,8 +822,8 @@ function openBox(){
   sJingle(); inv.wood+=2; inv.parachute++;
   const roll=Math.random(); let extra;
   if(!inv.needle&&roll<0.5){ inv.needle=1; extra="a sewing needle and thread!"; }
-  else if(roll<0.55){ inv.rope++; extra="a coil of rope!"; }
-  else if(roll<0.8){ inv.coconut++; extra="...tinned coconut. Really?"; }
+  else if(roll<0.65){ inv.rope++; extra="a coil of rope!"; }
+  else if(roll<0.85){ inv.coconut++; extra="...tinned coconut. Really?"; }
   else { extra="absolutely nothing. HILARIOUS, guys."; }
   msg("Rescue box: +2 wood, +1 parachute, and "+extra);
   bubble={t:"They dropped a BOX. Not a BOAT. A box.",life:4};
@@ -979,9 +979,9 @@ function updateGulls(dt){
 /* ---------- floaters ---------- */
 function spawnFloater(){
   const roll=Math.random(); let type;
-  if(roll<0.38) type='wood';
-  else if(roll<0.63) type='rope';
-  else if(roll<0.77) type='bottle';
+  if(roll<0.28) type='wood';
+  else if(roll<0.66) type='rope';
+  else if(roll<0.78) type='bottle';
   else if(roll<0.90) type='crate';
   else if(!flags.hasScope&&roll<0.95) type='scope';
   else type='wood';
@@ -1069,8 +1069,8 @@ function updateMermaid(dt){
   if(!mermaid.gifted&&Math.abs(p.x-mermaid.x)<70){
     mermaid.gifted=true; sGiggle();
     const roll=Math.random();
-    if(roll<0.35){ inv.fishR++; msg("The mermaid tosses you a fish and giggles!"); }
-    else if(roll<0.75){ inv.rope++; msg("The mermaid gives you seaweed rope!"); }
+    if(roll<0.3){ inv.fishR++; msg("The mermaid tosses you a fish and giggles!"); }
+    else if(roll<0.8){ inv.rope++; msg("The mermaid gives you seaweed rope!"); }
     else{ inv.gold++; msg("The mermaid gives you a shiny pearl! (+gold)"); }
     refreshInv();
   }
