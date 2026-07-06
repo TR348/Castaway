@@ -565,7 +565,7 @@ let island=1, arriveT=0, arriveWreckDone=false;
 let tools, rockHits;
 function toolWear(name,breakMsg){
   tools[name]--;
-  if(tools[name]<=0){ flags[name]=false; noiseHit(0.2,0.18,700); msg(breakMsg); }
+  if(tools[name]<=0){ flags[name==='rod'?'hasRod':name]=false; noiseHit(0.2,0.18,700); msg(breakMsg); }
   refreshInv();
 }
 let paused=false;
@@ -609,7 +609,7 @@ let fishing=null; // {t, biteAt}
 function resetGame(){
   time=0; dayT=0.1; day=1;
   p={x:800,y:210,dir:1,anim:0,moving:false,digT:0,sitAt:null,smashT:0};
-  inv={wood:0,rope:0,rock:0,coconut:2,fishR:0,fishC:0,fishBR:0,fishBC:0,parachute:0,needle:0,gold:0};
+  inv={wood:0,log:0,rope:0,rock:0,coconut:2,fishR:0,fishC:0,fishBR:0,fishBC:0,parachute:0,needle:0,gold:0};
   flags={hammer:false,axe:false,spear:false,hasRod:false,hasScope:false,fire:false,cover:false,
          chair:false,table:false,hut:false,mast:false,sail:false,raft:false,spring:false};
   stats={hp:100,food:80,water:80,energy:100};
@@ -618,7 +618,7 @@ function resetGame(){
   shark={x:200,dir:1,state:'patrol',anim:0,visitT:0};
   mermaid=null; digSpot=null; fishing=null; bubble=null; moveTarget=null;
   weather={active:false,dur:0,flash:0,thunderIn:0,side:1,elapsed:0,I:0}; plane=null; drop=null; sharkBubble=null; fireFuel=0;
-  tools={spear:0,hammer:0,axe:0}; rockHits=3;
+  tools={spear:0,hammer:0,axe:0,rod:0}; rockHits=3;
   sleepT=0; eatenT=0; sailT=0; sharkWarned=false; island=1; arriveT=0; arriveWreckDone=false;
   timers={floater:rand(14,25),gull:rand(40,70),mermaid:rand(90,170),ship:rand(30,80),dig:rand(50,90),
           mumble:rand(8,18),rain:rand(100,220),plane:rand(110,220),sharkTalk:rand(70,140)};
@@ -771,13 +771,17 @@ function doDig(){
   digSpot.hits--;
   if(digSpot.hits<=0){
     const roll=Math.random();
+    const hm=flags.hammer; // with a hammer the boulder supplies rocks, so digs favor other loot
     if(!flags.hasScope&&roll<0.15){ flags.hasScope=true; msg("A TELESCOPE! Now to watch the horizon... [T]"); sJingle(); updateScopeBtn(); }
-    else if(roll<0.5){ inv.rock++; msg("Dug up a solid rock! Good for tools."); sPickup(); }
-    else if(roll<0.72){ inv.gold+=rand(2,5)|0; msg("Buried treasure! Gold doubloons!"); sJingle(); }
-    else if(roll<0.86){ inv.rope++; msg("Dug up a coil of old rope!"); sPickup(); }
-    else if(roll<0.95){ inv.wood++; msg("Some buried driftwood. Handy!"); sPickup(); }
-    else if(roll<0.65) msg("A sea shell, How quaint!");
-    else msg("...an old boot. Fantastic.");
+    else if(roll<(hm?0.3:0.5)){ inv.rock++; msg("Dug up a solid rock! Good for tools."); sPickup(); }
+    else if(roll<(hm?0.48:0.72)){ inv.gold+=rand(2,5)|0; msg("Buried treasure! Gold doubloons!"); sJingle(); }
+    else if(roll<(hm?0.75:0.86)){ inv.rope++; msg("Dug up a coil of old rope!"); sPickup(); }
+    else if(roll<(hm?0.92:0.95)){ inv.wood++; msg("Some buried driftwood. Handy!"); sPickup(); }
+    else{
+      const duds=["...an old boot. Fantastic.","A sea shell. How quaint!",
+        "Another boot?! Where did I leave the first one?","OUCH! A crab bit me! Rude."];
+      msg(duds[Math.random()*duds.length|0]);
+    }
     digSpot=null; refreshInv();
   }
 }
@@ -798,6 +802,7 @@ function reelIn(){
   } else msg("Too soon... the fish laugh at you.");
   fishing=null;
   if(wasSpear) toolWear('spear',"SNAP! Your spear broke.");
+  else toolWear('rod',"SNAP! Your fishing rod broke.");
 }
 function cookFish(){
   if(inv.fishR>0){ inv.fishR--; inv.fishC++; }
@@ -817,8 +822,8 @@ function openBox(){
   sJingle(); inv.wood+=2; inv.parachute++;
   const roll=Math.random(); let extra;
   if(!inv.needle&&roll<0.5){ inv.needle=1; extra="a sewing needle and thread!"; }
-  else if(roll<0.4){ inv.rope++; extra="a coil of rope!"; }
-  else if(roll<0.7){ inv.coconut++; extra="...tinned coconut. Really?"; }
+  else if(roll<0.55){ inv.rope++; extra="a coil of rope!"; }
+  else if(roll<0.8){ inv.coconut++; extra="...tinned coconut. Really?"; }
   else { extra="absolutely nothing. HILARIOUS, guys."; }
   msg("Rescue box: +2 wood, +1 parachute, and "+extra);
   bubble={t:"They dropped a BOX. Not a BOAT. A box.",life:4};
@@ -876,11 +881,11 @@ const BUILDS=[
  {id:'cover', name:'COVER', cost:{wood:4,rope:2}, desc:'Shelter from rain and sun', done:()=>flags.cover, req:()=>flags.hammer&&flags.axe, reqTxt:'hammer + axe', fn:()=>{flags.cover=true;}},
  {id:'chair', name:'CHAIR', opt:true, cost:{wood:2,rope:1}, desc:'Sit like a civilised person', done:()=>flags.chair, req:()=>flags.cover, reqTxt:'cover', fn:()=>{flags.chair=true;}},
  {id:'table', name:'TABLE', opt:true, cost:{wood:3,rope:1}, desc:'Fine dining (+food bonus)', done:()=>flags.table, req:()=>flags.chair, reqTxt:'chair', fn:()=>{flags.table=true;}},
- {id:'rod', name:'FISHING ROD', cost:{wood:2,rope:2}, desc:'Catch BIG fish', done:()=>flags.hasRod, req:()=>flags.axe&&flags.cover, reqTxt:'axe + cover', fn:()=>{flags.hasRod=true;}},
+ {id:'rod', name:'FISHING ROD', cost:{wood:2,rope:2}, desc:'Catch BIG fish. Breaks after 5 uses', done:()=>flags.hasRod, req:()=>flags.axe&&flags.cover, reqTxt:'axe + cover', fn:()=>{flags.hasRod=true; tools.rod=5;}},
  {id:'hut', name:'HUT', cost:{wood:6,rope:3}, desc:'Sleep any time. Unlocks chopping the palms!', done:()=>flags.hut, req:()=>flags.cover, reqTxt:'cover', fn:()=>{flags.hut=true;}},
  {id:'mast', name:'MAST', cost:{wood:2,rope:1}, desc:'A raft needs a mast', done:()=>flags.mast, req:()=>flags.hut, reqTxt:'hut', fn:()=>{flags.mast=true;}},
  {id:'sail', name:'SAILS', cost:{parachute:3,needle:1}, desc:'Sewn from rescue parachutes', done:()=>flags.sail, req:()=>flags.mast, reqTxt:'mast', fn:()=>{flags.sail=true;}},
- {id:'raft', name:'RAFT', cost:{wood:8,rope:5,coconut:4}, desc:'Coconuts help it float. Escape!', done:()=>flags.raft, req:()=>flags.sail, reqTxt:'sails', fn:()=>{flags.raft=true;}}
+ {id:'raft', name:'RAFT', cost:{log:2,wood:10,rope:6,coconut:8}, desc:'Log hull, coconut floats. Escape!', done:()=>flags.raft, req:()=>flags.sail, reqTxt:'sails', fn:()=>{flags.raft=true;}}
 ];
 function canAfford(c){ for(const k in c) if(inv[k]<c[k]) return false; return true; }
 function pay(c){ for(const k in c) inv[k]-=c[k]; refreshInv(); }
@@ -921,7 +926,7 @@ overlay.addEventListener('pointerdown',e=>{ if(e.target===overlay) hidePanel(); 
 const invEl=document.getElementById('inv');
 function refreshInv(){
   const items=[
-    ['wood','WOOD',false],['rope','ROPE',false],['rock','ROCK',false],['coconut','COCONUT',true],
+    ['wood','WOOD',false],['log','LOG',false],['rope','ROPE',false],['rock','ROCK',false],['coconut','COCONUT',true],
     ['fishR','RAW FISH',true],['fishC','FRIED FISH',true],['fishBR','BIG RAW FISH',true],['fishBC','BIG FRIED FISH',true],
     ['parachute','PARACHUTE',false],['needle','NEEDLE&THREAD',false],['gold','GOLD',false]];
   let h='';
@@ -931,6 +936,7 @@ function refreshInv(){
   if(flags.spear) h+='<button class="invItem">SPEAR: '+tools.spear+' throws left</button>';
   if(flags.hammer) h+='<button class="invItem">HAMMER: '+tools.hammer+' uses left</button>';
   if(flags.axe) h+='<button class="invItem">AXE: '+tools.axe+' uses left</button>';
+  if(flags.hasRod) h+='<button class="invItem">ROD: '+tools.rod+' uses left</button>';
   invEl.innerHTML=h;
   invEl.querySelectorAll('.invItem').forEach(el=>el.addEventListener('pointerdown',e=>{
     e.preventDefault(); const k=el.dataset.k;
@@ -973,9 +979,9 @@ function updateGulls(dt){
 /* ---------- floaters ---------- */
 function spawnFloater(){
   const roll=Math.random(); let type;
-  if(roll<0.42) type='wood';
-  else if(roll<0.60) type='rope';
-  else if(roll<0.76) type='bottle';
+  if(roll<0.38) type='wood';
+  else if(roll<0.63) type='rope';
+  else if(roll<0.77) type='bottle';
   else if(roll<0.90) type='crate';
   else if(!flags.hasScope&&roll<0.95) type='scope';
   else type='wood';
@@ -1063,8 +1069,8 @@ function updateMermaid(dt){
   if(!mermaid.gifted&&Math.abs(p.x-mermaid.x)<70){
     mermaid.gifted=true; sGiggle();
     const roll=Math.random();
-    if(roll<0.4){ inv.fishR++; msg("The mermaid tosses you a fish and giggles!"); }
-    else if(roll<0.7){ inv.rope++; msg("The mermaid gives you seaweed rope!"); }
+    if(roll<0.35){ inv.fishR++; msg("The mermaid tosses you a fish and giggles!"); }
+    else if(roll<0.75){ inv.rope++; msg("The mermaid gives you seaweed rope!"); }
     else{ inv.gold++; msg("The mermaid gives you a shiny pearl! (+gold)"); }
     refreshInv();
   }
@@ -1229,6 +1235,7 @@ function update(dt){
       const wasSpear=!fishing.big;
       fishing=null; msg("It got away...");
       if(wasSpear) toolWear('spear',"SNAP! Your spear broke.");
+      else toolWear('rod',"SNAP! Your fishing rod broke.");
     }
   }
 
@@ -1258,10 +1265,10 @@ function update(dt){
     if(pl.alive&&pl.falling>0){
       pl.falling-=dt;
       if(pl.falling<=0){
-        pl.alive=false; inv.wood+=6; refreshInv();
+        pl.alive=false; inv.log++; refreshInv();
         noiseHit(0.4,0.25,150);
         for(let i=0;i<10;i++) particles.push({x:pl.x+rand(0,60),y:islandTop(pl.x)-4,vx:rand(-20,40),vy:rand(-60,-10),c:'#eed988',t:0.7});
-        msg("TIMBER! +6 wood. (Sorry, tree.)");
+        msg("TIMBER! +1 log. (Sorry, tree.)");
         toolWear('axe',"Your axe shattered!");
       }
       continue;
